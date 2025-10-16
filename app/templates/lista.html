@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pizzería 6K</title>
+    <style>
+        body { font-family: sans-serif; margin: 2em; }
+        h1, h2, h3 { color: #333; }
+        .container { display: flex; gap: 2em; }
+        .productos, .carrito { border: 1px solid #ccc; padding: 1em; border-radius: 8px; }
+        .producto, .detalle-item { border-bottom: 1px solid #eee; padding: 0.5em 0; }
+        .producto:last-child, .detalle-item:last-child { border-bottom: none; }
+        form { display: inline-flex; align-items: center; gap: 0.5em; }
+        input[type="number"] { width: 50px; }
+        button { cursor: pointer; }
+        .messages { list-style: none; padding: 0; margin: 1em 0; }
+        .messages li { padding: 0.8em; margin-bottom: 0.5em; border-radius: 5px; }
+        .messages .success { background-color: #d4edda; color: #155724; }
+        .messages .error { background-color: #f8d7da; color: #721c24; }
+        .messages .info { background-color: #d1ecf1; color: #0c5460; }
+    </style>
+</head>
+<body>
+
+    <h1>Pizzería 6K</h1>
+
+    {% if messages %}
+    <ul class="messages">
+        {% for message in messages %}
+            <li class="{{ message.tags }}">{{ message }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+
+    <div class="container">
+        <div class="productos">
+            <h2>Pizzas</h2>
+            {% for pizza in pizzas %}
+                <div class="producto">
+                    <strong>{{ pizza.nombre }}</strong> - ${{ pizza.precio }}
+                    <form action="{% url 'agregar_a_compra' pizza.id %}" method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="tipo" value="pizza">
+                        <input type="number" name="cantidad" value="1" min="1">
+                        <button type="submit">Agregar</button>
+                    </form>
+                </div>
+            {% empty %}
+                <p>No hay pizzas disponibles.</p>
+            {% endfor %}
+
+            <h2>Gaseosas</h2>
+            {% for gaseosa in gaseosas %}
+                <div class="producto">
+                    <strong>{{ gaseosa.nombre }} ({{ gaseosa.tipo }})</strong> - ${{ gaseosa.precio }}
+                    <form action="{% url 'agregar_a_compra' gaseosa.id %}" method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="tipo" value="gaseosa">
+                        <input type="number" name="cantidad" value="1" min="1">
+                        <button type="submit">Agregar</button>
+                    </form>
+                </div>
+            {% empty %}
+                <p>No hay gaseosas disponibles.</p>
+            {% endfor %}
+        </div>
+
+        <div class="carrito">
+            <h2>Carrito de Compras</h2>
+            {% if detalles_carrito %}
+                {% for detalle in detalles_carrito %}
+                    <div class="detalle-item">
+                        <p>
+                            <strong>{{ detalle.producto.nombre }}</strong>
+                            {% if detalle.producto.tipo %}({{ detalle.producto.tipo }}){% endif %}
+                        </p>
+                        
+                        <form action="{% url 'actualizar_cantidad' detalle.producto.id %}" method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="tipo" value="{{ detalle.content_type.model }}">
+                            Cantidad: <input type="number" name="cantidad" value="{{ detalle.cantidad }}" min="0">
+                            <button type="submit">Actualizar</button>
+                        </form>
+
+                        <form action="{% url 'eliminar_del_carrito' detalle.producto.id %}" method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="tipo" value="{{ detalle.content_type.model }}">
+                            <button type-="submit">Eliminar</button>
+                        </form>
+                    </div>
+                {% endfor %}
+
+                <h3>Total: ${{ carrito.total|default:"0.00" }}</h3>
+                <form action="{% url 'cerrar_compra' %}" method="post">
+                    {% csrf_token %}
+                    <button type="submit">Cerrar Compra</button>
+                </form>
+            {% else %}
+                <p>Tu carrito está vacío.</p>
+            {% endif %}
+        </div>
+    </div>
+
+</body>
+</html>
